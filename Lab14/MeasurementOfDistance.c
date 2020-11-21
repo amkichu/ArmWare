@@ -58,19 +58,19 @@ unsigned long Flag;       // 1 means valid Distance, 0 means Distance is empty
 // 1023 -> 500
 // 2948 -> 1439
 unsigned long Convert(unsigned long sample){
-    Distance = (unsigned long)((0.5 * sample) + 0);
-    return Distance;
+  Distance = (unsigned long)((0.5 * sample) + 0);
+  return Distance;
 }
 
 // Initialize SysTick interrupts to trigger at 40 Hz, 25 ms
 // need to generate a 40 Hz interrupt and bus is 80MHz,
 // so SysTick period is 80000000Hz/40Hz = 2000000
 void SysTick_Init(unsigned long period){
-    // configure the system to get its clock 80 MHz from the PLL
-    // 0) configure the system to use RCC2 for advanced features
-    //    such as 400 MHz PLL and non-integer System Clock Divisor
+// configure the system to get its clock 80 MHz from the PLL
+// 0) configure the system to use RCC2 for advanced features
+//    such as 400 MHz PLL and non-integer System Clock Divisor
     SYSCTL_RCC2_R |= SYSCTL_RCC2_USERCC2;
-  // 1) bypass PLL while initializing
+// 1) bypass PLL while initializing
     SYSCTL_RCC2_R |= SYSCTL_RCC2_BYPASS2;
 // 2) select the crystal value and oscillator source
     SYSCTL_RCC_R &= ~SYSCTL_RCC_XTAL_M;   // clear XTAL field
@@ -87,18 +87,29 @@ void SysTick_Init(unsigned long period){
     while((SYSCTL_RIS_R&SYSCTL_RIS_PLLLRIS)==0){};
 // 6) enable use of PLL by clearing BYPASS
     SYSCTL_RCC2_R &= ~SYSCTL_RCC2_BYPASS2;
-// For heartbeat in PF1
-    SYSCTL_RCGCGPIO_R |= 0x00000020; // activate port F
-    GPIO_PORTF_DIR_R |= 0x02;        // make PF1 out (built-in LED)
-    GPIO_PORTF_AFSEL_R &= ~0x02;     // disable alt funct on PF1
-    GPIO_PORTF_DEN_R |= 0x02;        // enable digital I/O on PF1
-                                     // configure PF1 as GPIO
-    GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R & 0xFFFFF0FF) + 0x00000000;
-    GPIO_PORTF_AMSEL_R = 0;     // disable analog functionality on PF
-    GPIO_PORTF_DATA_R &= ~0x02; // turn off LED
+// this routine sets the RELOAD and starts SysTick
+    NVIC_ST_CTRL_R = 0;                                            // disable SysTick during setup
+    NVIC_ST_RELOAD_R = period - 1;                                 // reload value
+    NVIC_ST_CURRENT_R = 0;                                         // any write to current clears it
+    NVIC_SYS_PRI3_R = (NVIC_SYS_PRI3_R & 0x00FFFFFF) | 0x20000000; // priority 1
+    NVIC_ST_CTRL_R = 0x0007;                                       // enable SysTick with core clock and interrupts
+}
+
+void Gpio_Init()
+{
+  // For heartbeat in PF1
+  SYSCTL_RCGCGPIO_R |= 0x00000020; // activate port F
+  GPIO_PORTF_DIR_R |= 0x02;        // make PF1 out (built-in LED)
+  GPIO_PORTF_AFSEL_R &= ~0x02;     // disable alt funct on PF1
+  GPIO_PORTF_DEN_R |= 0x02;        // enable digital I/O on PF1
+                                   // configure PF1 as GPIO
+  GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R & 0xFFFFF0FF) + 0x00000000;
+  GPIO_PORTF_AMSEL_R = 0;     // disable analog functionality on PF
+  GPIO_PORTF_DATA_R &= ~0x02; // turn off LED
 }
 // executes every 25 ms, collects a sample, converts and stores in mailbox
-void SysTick_Handler(void){
+void SysTick_Handler(void)
+  {
     GPIO_PORTF_DATA_R ^= 0x02; // toggle PF1 first time, debugging
     GPIO_PORTF_DATA_R ^= 0x02; // toggle PF1 second time
     ADCdata = ADC0_In();
@@ -179,11 +190,11 @@ int main(void){
     volatile unsigned long delay;
     TExaS_Init(ADC0_AIN1_PIN_PE2, SSI0_Real_Nokia5110_Scope);
 // initialize ADC0, channel 1, sequencer 3
+    ADC0_Init();
     Nokia5110_Init(); // initialize Nokia5110 LCD (optional)
     SysTick_Init(2000000);// initialize SysTick for 40 Hz interrupts and
-        // initialize profiling on PF1 (optional)
+    Gpio_Init(); // initialize profiling on PF1 (optional)
     //    wait for clock to stabilize
-    ADC0_Init();
     EnableInterrupts();
 // print a welcome message  (optional)
   while(1){ 
@@ -195,6 +206,5 @@ int main(void){
     Distance = Convert(ADCdata);
     UART_ConvertDistance(Distance); // from Lab 11
     Nokia5110_OutString(String);
-
   }
 }
