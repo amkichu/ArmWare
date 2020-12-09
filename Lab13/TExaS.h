@@ -4,13 +4,14 @@
 // Periodic timer Timer5A which will interact with debugger and grade the lab 
 // It initializes on reset and runs whenever interrupts are enabled
 // Jonathan Valvano
-// January 15, 2016
+// March 4, 2014
 
 /* This example accompanies the book
-   "Embedded Systems: Introduction to ARM Cortex M Microcontrollers",
-   ISBN: 978-1469998749, Jonathan Valvano, copyright (c) 2015
+   "Embedded Systems: Real Time Operating Systems for ARM Cortex M Microcontrollers",
+   ISBN: 978-1466468863, Jonathan Valvano, copyright (c) 2013
+   Section 6.4.5, Program 6.1
 
- Copyright 2016 by Jonathan W. Valvano, valvano@mail.utexas.edu
+ Copyright 2013 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
     as long as the above copyright notice remains
  THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED

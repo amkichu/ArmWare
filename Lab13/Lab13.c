@@ -3,7 +3,7 @@
 // Use SysTick interrupts to implement a 4-key digital piano
 // edX Lab 13 
 // Daniel Valvano, Jonathan Valvano
-// December 29, 2014
+// March 13, 2014
 // Port B bits 3-0 have the 4-bit DAC
 // Port E bits 3-0 have 4 piano keys
 
@@ -11,39 +11,82 @@
 #include "Sound.h"
 #include "Piano.h"
 #include "TExaS.h"
+#include "DAC.h"
 
 // basic functions defined at end of startup.s
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
 void delay(unsigned long msec);
-int main(void){ // Real Lab13 
-unsigned long input;
-// for the real board grader to work 
-// you must connect PD3 to your DAC output
-  TExaS_Init(SW_PIN_PE3210, DAC_PIN_PB3210,ScopeOn); // activate grader and set system clock to 80 MHz
-// PortE used for piano keys, PortB used for DAC
-  Sound_Init(); // initialize SysTick timer and DAC
-  Piano_Init();
-  EnableInterrupts();  // enable after all initialization are done
-  while(1){
-// need to generate a G 784 Hz sine wave
-// table size is 32, so need 784Hz*32 = 25.088 kHz interrupt
-// bus is 80MHz, so SysTick period is 80000kHz/25.088kHz = 3188.7755 = 3189
 
-// // input from keys to select tone
-//     input = Piano_In();
-//          if(input=0x01) Sound_Tone(2389);    // Key 0: C
-//     else if(input=0x02) Sound_Tone(4257);    // Key 1: D
-//     else if(input=0x04) Sound_Tone(3792);    // Key 2: E
-//     else if(input=0x08) Sound_Tone(3189);    // Key 3: G
-//     input = 0;
-// static debugging
-    unsigned long i;
-    for (i = 0; i < 16; i++){
-        DAC_Out(i);
-        delay(10); // connect PD3 to DAC output
-    }
+int main(void){ // Real Lab13 
+	unsigned long i,input,previous,n;     
+
+	// for the real board grader to work 
+	// you must connect PD3 to your DAC output
+
+  TExaS_Init(SW_PIN_PE3210, DAC_PIN_PB3210,ScopeOn); // activate grader and set system clock to 80 MHz
+  // PortE used for piano keys, PortB used for DAC        
+	DisableInterrupts();
+	Piano_Init();
+  Sound_Init(500000); // initialize SysTick timer and DAC
+  EnableInterrupts();  // enable after all initialization are done	
+	Sound_Off();
+
+	// Initial testing, law of superposition
+  DAC_Out(1);
+  DAC_Out(2);
+  DAC_Out(4);
+	
+// static testing, single step and record Vout
+  for(i=0;i<8;i++){
+    DAC_Out(i);
   }
+	
+	previous = Piano_In();
+	
+//	n = 0;
+//  TExaS_Init(SW_PIN_PA5432, DAC_PIN_PB3210,ScopeOn); // activate grader 
+//	
+//	// static test
+//	while(1){
+//    DAC_Out(n);     // your code to output to the DAC
+//    delay(1); // wait 1s (later change this to 1ms)
+//    n = (n+1)&0x0F;
+//  }
+	
+  while(1) {              
+		// input from keys to select tone
+		input = Piano_In(); // means a switch is pressed
+		if (input) {
+			// Piano key 0
+			if(input == 0x01) {
+				Sound_Tone(C0);
+			}
+			// Piano key 1
+			else if(input == 0x02) {
+				Sound_Tone(D);
+			}
+			// Piano key 2
+			else if(input == 0x04) {
+				Sound_Tone(E);
+			}
+			// Piano key 3
+			else if(input == 0x08) {
+				Sound_Tone(G);
+			}
+		} 
+
+		else {
+			Sound_Off();
+		}	
+		
+		if(previous&&(input==0)){ // just released     
+			Sound_Off();
+		}		
+		
+		delay(10);
+		previous = input;		
+  }            
 }
 
 // Inputs: Number of msec to delay
@@ -53,8 +96,10 @@ void delay(unsigned long msec){
   while(msec > 0 ) {  // repeat while there are still delay
     count = 16000;    // about 1ms
     while (count > 0) { 
-      count--;
+                count--;
     } // This while loop takes approximately 3 cycles
     msec--;
   }
 }
+
+

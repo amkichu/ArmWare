@@ -3,7 +3,7 @@
 // edX lab 13 
 // There are four keys in the piano
 // Daniel Valvano, Jonathan Valvano
-// December 29, 2014
+// March 13, 2014
 
 // **************Piano_Init*********************
 // Initialize piano key inputs
@@ -19,3 +19,9 @@ void Piano_Init(void);
 // 0x01 is key 0 pressed, 0x02 is key 1 pressed,
 // 0x04 is key 2 pressed, 0x08 is key 3 pressed
 unsigned long Piano_In(void);
+
+//---------------------Delay10ms---------------------
+// wait 10ms for switches to stop bouncing
+// Input: none
+// Output: none
+void Delay10ms(void);
